@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+    android:id="@+id/mapigateBSheet"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white" />
+
+    <LinearLayout
+        android:id="@+id/mapigateBSheetHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="5dp">
+
+        <ImageView
+            android:id="@+id/mapigateBSheetDragger"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:src="@drawable/map_sheet_dragger_up" />
+
+        <include layout="@layout/mapigate_bottom_sheet_header" />
+
+    </LinearLayout>
+
+    <RelativeLayout
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        android:id="@+id/mapigateBSheetContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:layout_below="@+id/mapigateBSheetHeader">
+
+    </RelativeLayout>
+
+</RelativeLayout>

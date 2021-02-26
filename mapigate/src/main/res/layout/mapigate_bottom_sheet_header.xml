@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    tools:showIn="@layout/mapigate_bottom_sheet">
+
+    <ImageView
+        android:id="@+id/mapigateHeaderIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp" />
+
+    <TextView
+        android:id="@+id/mapigateHeaderName"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="left|center"
+        android:layout_marginStart="10dp"
+        android:text="Medvěd hnědý" />
+
+    <!-- button layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end|center">
+
+        <TextView
+            android:id="@+id/mapigateSumDistText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="5dp"
+            android:paddingEnd="10dp"
+            android:text="650 m" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/mapigateDirButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:src="@drawable/map_btn_ic_directions"
+            android:scaleType="center"
+            android:layout_marginEnd="5dp"
+            app:fabSize="mini" />
+
+    </LinearLayout>
+
+</LinearLayout>

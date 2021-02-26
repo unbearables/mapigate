@@ -1,0 +1,3 @@
+include ':mapigate'
+include ':demo'
+rootProject.name = "mapigate"
