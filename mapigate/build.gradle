@@ -12,7 +12,7 @@ repositories {
 }
 
 group = 'com.github.unbearables.mapigate'
-def versionTag = '1.0.1'
+def versionTag = '1.0.2'
 
 android {
     compileSdkVersion 30
@@ -59,10 +59,9 @@ dependencies {
 afterEvaluate {
     publishing {
         publications {
-            // Creates a Maven publication called "release".
             release(MavenPublication) {
                 from components.release
-                groupId = 'com.github.unbearables.mapigate'
+                groupId = 'com.github.unbearables'
                 artifactId = 'mapigate'
                 version = versionTag
             }
