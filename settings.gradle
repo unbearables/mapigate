@@ -1,2 +1,2 @@
 include ':mapigate'
-rootProject.name = "mapigate"
+rootProject.name = "mapigate-library"

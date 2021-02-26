@@ -11,8 +11,8 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-group = 'com.github.unbearables.mapigate'
-def versionTag = '1.0.2'
+group = 'com.github.unbearables'
+def versionTag = '1.0.3'
 
 android {
     compileSdkVersion 30
