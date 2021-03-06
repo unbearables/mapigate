@@ -2,7 +2,7 @@ package com.github.unbearables.mapigate.map.api
 
 import com.github.unbearables.mapigate.map.MapCoordinate
 
-interface IDijkstraPath {
+interface IMapPath {
     val fromMarkerId: Int
     val toMarkerId: Int
     val distanceInMeters: Double

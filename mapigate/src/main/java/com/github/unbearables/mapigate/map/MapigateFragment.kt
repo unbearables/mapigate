@@ -28,7 +28,7 @@ import com.peterlaurence.mapview.paths.toFloatArray
 import com.peterlaurence.mapview.util.AngleDegree
 import com.github.unbearables.mapigate.R
 import com.github.unbearables.mapigate.gps.*
-import com.github.unbearables.mapigate.map.api.IDijkstraPath
+import com.github.unbearables.mapigate.map.api.IMapPath
 import com.github.unbearables.mapigate.map.api.MapigateEventListener
 import com.github.unbearables.mapigate.map.config.MapConfiguration
 import com.github.unbearables.mapigate.map.config.PathStyle
@@ -52,9 +52,10 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
     private lateinit var headerIcon: ImageView
     private lateinit var headerName: TextView
     private lateinit var directionButton: FloatingActionButton
-    private lateinit var sumDistanceText: TextView
+    private lateinit var sumDistText: TextView
 
     // Map objects
+    private lateinit var mapConfig: MapConfiguration
     private lateinit var mapView: MapView
     private lateinit var mapRefOwner: RefOwner
     private var currPosMarker: MapMarkerView? = null
@@ -112,7 +113,7 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         headerIcon = bottomSheet.findViewById(R.id.mapigateHeaderIcon)
         headerName = bottomSheet.findViewById(R.id.mapigateHeaderName)
         directionButton = bottomSheet.findViewById(R.id.mapigateDirButton)
-        sumDistanceText = bottomSheet.findViewById(R.id.mapigateSumDistText)
+        sumDistText = bottomSheet.findViewById(R.id.mapigateSumDistText)
 
         val moveToClickedMarker = View.OnClickListener {
             mapView.moveToMarker(currPosMarker!!, true)
@@ -121,28 +122,8 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         headerName.setOnClickListener(moveToClickedMarker)
 
         directionButton.setOnClickListener {
-            if (currPosMarker != null && dijkstraReady) {
-                val currLat = currPosMarker!!.mapMarker.latitude
-                val currLng = currPosMarker!!.mapMarker.longitude
-
-                val nearestNode = findNearestMarker(markerViewMap.values.map { m -> m.mapMarker }, currLat, currLng)
-                val haversineDistance = haversineDistanceKm(
-                        currLat, currLng, nearestNode.latitude, nearestNode.longitude)
-                val dijsktraResult = findAndDrawShortestPath(nearestNode)
-
-                targetMarkerId = clickedMarker!!.markerId
-                distTextToTarget = DistanceUtil.prettifyMeters((haversineDistance * 1000) + dijsktraResult.totalDistance)
-                sumDistanceText.text = distTextToTarget
-
-                onShortestPathFind(dijsktraResult.markers, dijsktraResult.distanceStepMap,
-                        haversineDistance, dijsktraResult.totalDistance)
-
-                mapView.moveToMarker(currPosMarker!!, 1f, true)
-
-                halfExpandBottomSheet()
-            }
-            else {
-                Toast.makeText(activity, "Unavailable", Toast.LENGTH_SHORT).show()
+            if (clickedMarker != null) {
+                findShortestPath(clickedMarker!!)
             }
         }
 
@@ -184,7 +165,7 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         val context = requireContext()
         mapView = MapView(context)
 
-        val mapConfig = configureMap()
+        mapConfig = configureMap()
 
         val tileStreamProvider = TileStreamProvider { row, col, zoomLvl ->
                 try {
@@ -255,7 +236,7 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
                         clickedMarker = view.mapMarker
                         headerName.text = clickedMarker!!.title
                         clickedMarker!!.markerIconResId?.let { headerIcon.setImageResource(it) }
-                        sumDistanceText.text = distTextToTarget
+                        sumDistText.text = distTextToTarget
                             ?.takeIf { clickedMarker!!.markerId == targetMarkerId } ?: ""
                     }
                 }
@@ -279,51 +260,13 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         defaultPathStyle = PathStyle(paint, 15f)
     }
 
-    private fun findAndDrawShortestPath(nearestNode: MapMarker): DijkstraResult {
-        val pathPoints = mutableListOf<PathPoint>()
-        if (currPosMarker != null) {
-            pathPoints.add(PathPoint(currPosMarker!!.mapMarker.longitude, currPosMarker!!.mapMarker.latitude))
+    private fun createDrawablePath(floatArray: FloatArray, pathStyle: PathStyle): PathView.DrawablePath {
+        return object : PathView.DrawablePath {
+            override val visible: Boolean = true
+            override var path: FloatArray = floatArray
+            override var paint: Paint? = pathStyle.paint
+            override val width: Float? = pathStyle.width
         }
-
-        val dijkstraResult: DijkstraResult
-        val markerList: List<MapMarker>
-        if (nearestNode.markerId == clickedMarker!!.markerId) {
-            markerList = listOf(nearestNode)
-            dijkstraResult = DijkstraResult(markerList, emptyMap(), 0.0)
-        } else {
-            dijkstraResult = dijkstraGraph.shortestPath(nearestNode, clickedMarker as MapMarker)
-            markerList = dijkstraResult.markers
-        }
-
-        drawPath(markerList, pathPoints)
-
-        return dijkstraResult
-    }
-
-    private fun drawPath(markerList: List<MapMarker>, pathPoints: MutableList<PathPoint>) {
-        val lastIndex = markerList.size - 1
-        for ((i, n) in markerList.withIndex()) {
-            pathPoints.add(PathPoint(n.accessLongitude, n.accessLatitude))
-            if (i != lastIndex && pathMap.containsKey(n.markerId)) {
-                val pathCoordinates = pathMap[n.markerId]!![markerList[1 + i].markerId]
-                if (pathCoordinates != null) {
-                    for (pc in pathCoordinates) {
-                        pathPoints.add(PathPoint(pc.lng, pc.lat))
-                    }
-                }
-            }
-        }
-        pathView.visibility = View.VISIBLE
-        val pathStyle = stylePath() ?: defaultPathStyle
-        pathView.updatePaths(listOfNotNull(pathPoints.toFloatArray(mapView))
-                .map {
-                    object : PathView.DrawablePath {
-                        override val visible: Boolean = true
-                        override var path: FloatArray = it
-                        override var paint: Paint? = pathStyle.paint
-                        override val width: Float? = pathStyle.width
-                    }
-                })
     }
 
     private fun MapView.addToFragment() = apply {
@@ -333,8 +276,9 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
     }
 
     private fun MapView.addCurrPositionMarker(lat: Double, lng: Double): MapMarkerView {
+        val currPosIconId = mapConfig.currPositionMarkerResId ?: R.drawable.map_marker_curr_position
         val mView = MapMarkerView(requireContext(),
-            MapMarker(lat, lng, currPositionMarkerId, "", null, R.drawable.map_marker_curr_position)) // TODO customize icon
+            MapMarker(lat, lng, currPositionMarkerId, "", null, currPosIconId))
         addMarker(mView, lng , lat, -0.5f, -0.5f)
         return mView
     }
@@ -396,7 +340,7 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         currPosRefOwner.angleDegree = bearing
     }
 
-    fun initDijkstra(dijkstraPaths: List<IDijkstraPath>) {
+    fun initDijkstra(dijkstraPaths: List<IMapPath>) {
         dijkstraGraph = DijkstraGraph()
 
         for (dp in dijkstraPaths) {
@@ -415,6 +359,62 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
         }
 
         dijkstraReady = true
+    }
+
+    fun findShortestPath(marker: MapMarker) {
+        if (dijkstraReady && currPosMarker != null) {
+            val currLat = currPosMarker!!.mapMarker.latitude
+            val currLng = currPosMarker!!.mapMarker.longitude
+            val nearestMarker = findNearestMarker(markerViewMap.values.map { it.mapMarker }, currLat, currLng)
+            val haversineDist = haversineDistanceKm(
+                currLat, currLng, nearestMarker.latitude, nearestMarker.longitude)
+            val dijkstraResult = findDijkstraPath(nearestMarker, marker)
+
+            drawPath(dijkstraResult.markers)
+
+            targetMarkerId = marker.markerId
+            distTextToTarget = DistanceUtil.prettifyMeters(
+                haversineDist * 1000 + dijkstraResult.totalDistance)
+            sumDistText.text = distTextToTarget
+
+            onShortestPathFind(dijkstraResult.markers, dijkstraResult.distanceStepMap,
+                haversineDist, dijkstraResult.totalDistance)
+
+            mapView.moveToMarker(currPosMarker!!, 1f, true)
+
+            halfExpandBottomSheet()
+        } else {
+            showUnavailableTest()
+        }
+    }
+
+    fun findDijkstraPath(from: MapMarker, to: MapMarker): DijkstraResult {
+        return if (from.markerId == to.markerId) {
+            DijkstraResult(listOf(from), emptyMap(), 0.0)
+        } else {
+            dijkstraGraph.shortestPath(from, to)
+        }
+    }
+
+    fun drawPath(markerList: List<MapMarker>, startFromCurrentPosition: Boolean = true) {
+        val paths = mutableListOf<PathPoint>()
+        if (startFromCurrentPosition && currPosMarker != null) {
+            paths.add(PathPoint(currPosMarker!!.mapMarker.longitude, currPosMarker!!.mapMarker.latitude))
+        }
+
+        val lastIndex = markerList.size - 1
+        for ((i, n) in markerList.withIndex()) {
+            paths.add(PathPoint(n.accessLongitude, n.accessLatitude))
+            if (i != lastIndex && pathMap.containsKey(n.markerId)) {
+                pathMap[n.markerId]!![markerList[1 + i].markerId]?.let {
+                    it.forEach { p -> paths.add(PathPoint(p.lng, p.lat)) }
+                }
+            }
+        }
+        pathView.visibility = View.VISIBLE
+        val pathStyle = stylePath() ?: defaultPathStyle
+        pathView.updatePaths(listOfNotNull(paths.toFloatArray(mapView))
+                .map { createDrawablePath(it, pathStyle) })
     }
 
     fun moveToMarkerById(markerId: Any, destScale: Float = 1f, animate: Boolean = true): Boolean {
@@ -442,6 +442,9 @@ abstract class MapigateFragment : Fragment(), MapigateEventListener {
 
     /** Defaulting style path */
     open fun stylePath(): PathStyle? = null
+
+    open fun showUnavailableTest() = Toast.makeText(activity,
+            "Unavailable", Toast.LENGTH_SHORT).show()
 }
 
 private const val DEFAULT_PATH_COLOR = "#1460aa"

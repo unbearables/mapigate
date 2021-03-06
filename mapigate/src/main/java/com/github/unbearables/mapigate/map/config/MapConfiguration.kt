@@ -5,4 +5,4 @@ data class MapConfiguration(
         val bottomLatitude: Double, val leftLongitude: Double,
         val fullWidth: Int, val fullHeight: Int, val levelCount: Int, val tileSize: Int,
         val maxScale: Float, val enableRotation: Boolean = true,
-        val assetPathToMapTiles: String = "tiles/")
+        val assetPathToMapTiles: String = "tiles/", val currPositionMarkerResId: Int? = null)

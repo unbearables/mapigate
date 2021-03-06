@@ -12,7 +12,7 @@ repositories {
 }
 
 group = 'com.github.unbearables'
-def versionTag = '1.0.3'
+def versionTag = '1.0.4'
 
 android {
     compileSdkVersion 30

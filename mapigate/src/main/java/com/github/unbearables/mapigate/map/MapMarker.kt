@@ -3,6 +3,7 @@ package com.github.unbearables.mapigate.map
 /**
  * A custom View that serves as map marker. It bundles its own position and name.
  */
+@Suppress("unused")
 class MapMarker(var latitude: Double,
                 var longitude: Double,
                 val markerId: Any,
