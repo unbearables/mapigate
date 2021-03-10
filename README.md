@@ -5,9 +5,22 @@ Map library for displaying markers and finding shortest path amongst them using 
 
 Map implementation is done using efficient Kotlin library [MapView](https://github.com/peterLaurence/MapView) by [peterLaurence](https://github.com/peterLaurence)
 
+## Installation
+Install using gradle with desired version (latest is recommended):
+```gradle
+repositories {
+  ...
+  maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+  implementation 'com.github.unbearables:mapigate:{mapigate-version}'
+}
+```
+
 ## Usage
 
-Easy ready to use implementation using MapigateFragment:
+Easy ready to use implementation using `MapigateFragment`:
 
 ```kotlin
 class MapFragment: MapigateFragment() {
@@ -26,16 +39,13 @@ class MapFragment: MapigateFragment() {
   }
 
   override fun configureMap(): MapConfiguration {
-    val topLat = 50.1218811
-    val rightLng = 14.4130258
-    val bottomLat = 50.1141575
-    val leftLng = 14.3979947
+    val topLat, rightLng, bottomLat, leftLng = ... // your coordinate bounds
 
     return MapConfiguration(topLat, rightLng, bottomLat, leftLng, 3815, 3085, 5, 256, 4f)
   }
 }
 ``` 
 
----
+## About
 
 This project is result of a diploma thesis
